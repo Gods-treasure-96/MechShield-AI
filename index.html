@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MechShield AI / AutoShield — Universal Asset Health & Reliability Platform</title>
+  
+  <!-- Tailwind CSS & Chart.js -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              charcoal: '#0B0F19',
+              navy: '#111827',
+              surface: '#161F30',
+              border: '#1F293D',
+              blue: '#38BDF8',
+              emerald: '#10B981',
+              amber: '#F59E0B',
+              rose: '#EF4444'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0B0F19; color: #E5E7EB; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .glow-blue { box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
+    .glow-emerald { box-shadow: 0 0 15px rgba(16, 185, 129, 0.25); }
+    .glow-rose { box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+    .glow-amber { box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0B0F19; }
+    ::-webkit-scrollbar-thumb { background: #1F293D; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #374151; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-brand-charcoal text-gray-200 antialiased selection:bg-brand-blue selection:text-black">
+
+  <!-- TOP APP BAR -->
+  <header class="border-b border-brand-border bg-brand-navy/90 backdrop-blur sticky top-0 z-50 px-4 lg:px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <button id="mobile-menu-btn" class="lg:hidden text-gray-400 hover:text-white p-1" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+      <div class="w-9 h-9 rounded-lg bg-brand-blue/10 border border-brand-blue/30 flex items-center justify-center text-brand-blue font-bold text-lg glow-blue">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-extrabold text-lg tracking-tight text-white">MechShield <span class="text-brand-blue">AI</span></span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-blue/10 text-brand-blue border border-brand-blue/30 uppercase tracking-wider">AutoShield Enterprise</span>
+        </div>
+        <p class="text-[11px] text-gray-400 hidden sm:block">Universal Physics-Informed Predictive Asset Reliability Platform</p>
+      </div>
+    </div>
+
+    <!-- Center/Right Status Indicators -->
+    <div class="flex items-center space-x-3 sm:space-x-4">
+      <!-- Data Mode Badge -->
+      <div id="data-mode-badge" class="flex items-center space-x-2 text-xs bg-brand-surface border border-brand-border px-3 py-1.5 rounded-full cursor-pointer hover:border-brand-blue transition" onclick="switchView('settings')" title="Click to configure backend API settings">
+        <span id="data-mode-dot" class="w-2 h-2 rounded-full bg-brand-blue animate-pulse"></span>
+        <span id="data-mode-text" class="text-gray-300 font-medium text-[11px] sm:text-xs">SIMULATED (Physics Engine)</span>
+      </div>
+
+      <!-- Quick KPI Chips -->
+      <div class="hidden md:flex items-center space-x-2 text-xs">
+        <span class="px-2.5 py-1 rounded-md bg-brand-emerald/10 text-brand-emerald border border-brand-emerald/20 font-semibold flex items-center space-x-1.5">
+          <i class="fa-solid fa-circle-check text-[10px]"></i>
+          <span id="header-healthy-count">1</span>
+        </span>
+        <span class="px-2.5 py-1 rounded-md bg-brand-amber/10 text-brand-amber border border-brand-amber/20 font-semibold flex items-center space-x-1.5">
+          <i class="fa-solid fa-triangle-exclamation text-[10px]"></i>
+          <span id="header-warning-count">1</span>
+        </span>
+        <span class="px-2.5 py-1 rounded-md bg-brand-rose/10 text-brand-rose border border-brand-rose/20 font-semibold flex items-center space-x-1.5">
+          <i class="fa-solid fa-circle-xmark text-[10px]"></i>
+          <span id="header-critical-count">1</span>
+        </span>
+      </div>
+
+      <!-- Settings & Refresh -->
+      <div class="flex items-center space-x-2">
+        <button onclick="triggerTelemetryRefresh()" class="p-2 rounded-lg bg-brand-surface hover:bg-gray-800 text-gray-300 hover:text-white border border-brand-border transition" title="Refresh Telemetry">
+          <i class="fa-solid fa-arrows-rotate text-sm" id="refresh-icon"></i>
+        </button>
+        <button onclick="switchView('settings')" class="p-2 rounded-lg bg-brand-surface hover:bg-gray-800 text-gray-300 hover:text-white border border-brand-border transition" title="Platform Settings">
+          <i class="fa-solid fa-gear text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- APP BODY: SIDEBAR + MAIN CONTENT -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside id="app-sidebar" class="w-64 bg-brand-navy border-r border-brand-border flex flex-col justify-between transition-all duration-200 z-40 fixed lg:static inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 mt-[57px] lg:mt-0">
+      <div class="p-4 space-y-6 overflow-y-auto flex-1">
+        <div>
+          <span class="text-[10px] uppercase font-bold tracking-wider text-gray-400 px-3">Reliability Operations</span>
+          <nav class="mt-2 space-y-1">
+            <button onclick="switchView('dashboard')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-brand-blue bg-brand-blue/10 border border-brand-blue/30" data-view="dashboard">
+              <i class="fa-solid fa-gauge-high w-5 text-center"></i>
+              <span>Dashboard</span>
+            </button>
+            <button onclick="switchView('fleet')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:text-white hover:bg-brand-surface" data-view="fleet">
+              <i class="fa-solid fa-boxes-stacked w-5 text-center"></i>
+              <span>Fleet Management</span>
+              <span id="nav-fleet-count" class="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-surface border border-brand-border text-gray-300">3</span>
+            </button>
+            <button onclick="switchView('diagnostics')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:text-white hover:bg-brand-surface" data-view="diagnostics">
+              <i class="fa-solid fa-stethoscope w-5 text-center"></i>
+              <span>Equipment Diagnostics</span>
+            </button>
+            <button onclick="switchView('predictive')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:text-white hover:bg-brand-surface" data-view="predictive">
+              <i class="fa-solid fa-chart-line w-5 text-center"></i>
+              <span>Predictive Maintenance</span>
+            </button>
+            <button onclick="switchView('simulation')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:text-white hover:bg-brand-surface" data-view="simulation">
+              <i class="fa-solid fa-flask-vial w-5 text-center"></i>
+              <span>Fault Simulation Lab</span>
+            </button>
+          </nav>
+        </div>
+
+        <div>
+          <span class="text-[10px] uppercase font-bold tracking-wider text-gray-400 px-3">Engineering Intelligence</span>
+          <nav class="mt-2 space-y-1">
+            <button onclick="switchView('reports')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:text-white hover:bg-brand-surface" data-view="reports">
+              <i class="fa-solid fa-file-contract w-5 text-center"></i>
+              <span>Maintenance Reports</span>
+            </button>
+            <button onclick="switchView('analytics')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:text-white hover:bg-brand-surface" data-view="analytics">
+              <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+              <span>Historical Analytics</span>
+            </button>
+            <button onclick="switchView('ai')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:text-white hover:bg-brand-surface" data-view="ai">
+              <i class="fa-solid fa-brain w-5 text-center text-purple-400"></i>
+              <span>AI Engineering Assistant</span>
+            </button>
+            <button onclick="switchView('settings')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:text-white hover:bg-brand-surface" data-view="settings">
+              <i class="fa-solid fa-sliders w-5 text-center"></i>
+              <span>Platform Settings</span>
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <!-- User / System Info Footer -->
+      <div class="p-4 border-t border-brand-border bg-brand-surface/40">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-full bg-brand-blue/20 border border-brand-blue/40 flex items-center justify-center text-brand-blue font-bold text-xs">
+            MLH
+          </div>
+          <div class="truncate">
+            <div class="text-xs font-semibold text-white truncate">Lead Reliability Engineer</div>
+            <div class="text-[10px] text-gray-400 mono">ISO 10816-3 Certified</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN VIEW AREA -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 bg-brand-charcoal">
+
+      <!-- ========================================== -->
+      <!-- VIEW 1: EXECUTIVE DASHBOARD -->
+      <!-- ========================================== -->
+      <div id="view-dashboard" class="view-panel space-y-6">
+        
+        <!-- FLEET KPI SUMMARY CARDS -->
+        <section class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-4">
+            <span class="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">Total Fleet Units</span>
+            <div class="flex items-baseline space-x-2 mt-1.5">
+              <span id="kpi-total" class="text-2xl sm:text-3xl font-extrabold text-white mono">3</span>
+              <span class="text-xs text-gray-400">Assets</span>
+            </div>
+            <div class="mt-2 text-[11px] text-brand-blue font-medium">100% Monitored</div>
+          </div>
+
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-4 border-l-4 border-l-brand-emerald">
+            <span class="text-[11px] text-brand-emerald uppercase tracking-wider font-semibold">Nominal / Healthy</span>
+            <div class="flex items-baseline space-x-2 mt-1.5">
+              <span id="kpi-healthy" class="text-2xl sm:text-3xl font-extrabold text-brand-emerald mono">1</span>
+              <span class="text-xs text-gray-400">Zone A/B</span>
+            </div>
+            <div class="mt-2 text-[11px] text-gray-400">Pristine Tolerances</div>
+          </div>
+
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-4 border-l-4 border-l-brand-amber">
+            <span class="text-[11px] text-brand-amber uppercase tracking-wider font-semibold">Drift Warning</span>
+            <div class="flex items-baseline space-x-2 mt-1.5">
+              <span id="kpi-warning" class="text-2xl sm:text-3xl font-extrabold text-brand-amber mono">1</span>
+              <span class="text-xs text-gray-400">&ge; 2.0&sigma;</span>
+            </div>
+            <div class="mt-2 text-[11px] text-brand-amber font-medium">Preventive Action Req.</div>
+          </div>
+
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-4 border-l-4 border-l-brand-rose">
+            <span class="text-[11px] text-brand-rose uppercase tracking-wider font-semibold">Critical Breach</span>
+            <div class="flex items-baseline space-x-2 mt-1.5">
+              <span id="kpi-critical" class="text-2xl sm:text-3xl font-extrabold text-brand-rose mono">1</span>
+              <span class="text-xs text-gray-400">&ge; 3.0&sigma;</span>
+            </div>
+            <div class="mt-2 text-[11px] text-brand-rose font-medium">Shutdown Scheduled</div>
+          </div>
+
+          <div class="col-span-2 lg:col-span-1 bg-brand-navy border border-brand-border rounded-xl p-4 border-l-4 border-l-brand-blue">
+            <span class="text-[11px] text-brand-blue uppercase tracking-wider font-semibold">Fleet Avg OEE</span>
+            <div class="flex items-baseline space-x-2 mt-1.5">
+              <span id="kpi-oee" class="text-2xl sm:text-3xl font-extrabold text-brand-blue mono">82.4%</span>
+              <span class="text-xs text-gray-400">A &times; P &times; Q</span>
+            </div>
+            <div class="mt-2 text-[11px] text-gray-400">Industry Benchmark: 85%</div>
+          </div>
+        </section>
+
+        <!-- ASSET SELECTOR CARDS -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-300 flex items-center space-x-2">
+              <i class="fa-solid fa-server text-brand-blue"></i>
+              <span>Active Machine Digital Profiles</span>
+            </h2>
+            <button onclick="switchView('fleet')" class="text-xs text-brand-blue hover:underline">View Fleet Details &rarr;</button>
+          </div>
+          <div id="asset-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- ASSET TELEMETRY & DIAGNOSTIC DEEP-DIVE -->
+        <section id="deep-dive" class="space-y-6">
+          <div class="bg-brand-navy border border-brand-border rounded-2xl p-5 sm:p-6 space-y-6">
+            
+            <!-- Asset Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-brand-border gap-4">
+              <div>
+                <div class="flex items-center space-x-3">
+                  <h3 id="detail-name" class="text-lg sm:text-xl font-bold text-white">Select an Asset</h3>
+                  <span id="detail-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-surface text-gray-300 border border-brand-border">UNKNOWN</span>
+                </div>
+                <p id="detail-desc" class="text-xs text-gray-400 mt-1">Profile definition and active reliability baseline</p>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex flex-wrap items-center gap-2">
+                <button onclick="switchView('simulation')" class="text-xs px-3 py-2 rounded-lg bg-brand-surface hover:bg-gray-800 text-gray-200 border border-brand-border flex items-center space-x-1.5">
+                  <i class="fa-solid fa-flask text-brand-amber"></i>
+                  <span>Inject Fault</span>
+                </button>
+                <button onclick="requestAiDiagnosis()" class="text-xs px-3.5 py-2 rounded-lg bg-brand-blue/20 hover:bg-brand-blue/30 text-brand-blue font-semibold border border-brand-blue/40 flex items-center space-x-1.5 transition glow-blue">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i>
+                  <span>Analyze with Gemma 4</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Health Score & Engineering Metrics Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div class="bg-brand-surface/60 border border-brand-border rounded-xl p-3 text-center">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold">Health Score</span>
+                <div id="detail-health-score" class="text-2xl font-extrabold mono mt-1 text-brand-emerald">--</div>
+              </div>
+              <div class="bg-brand-surface/60 border border-brand-border rounded-xl p-3 text-center">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold">Mechanical Eff.</span>
+                <div id="metric-eff" class="text-xl font-bold mono mt-1 text-white">--</div>
+              </div>
+              <div class="bg-brand-surface/60 border border-brand-border rounded-xl p-3 text-center">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold">Availability</span>
+                <div id="metric-avail" class="text-xl font-bold mono mt-1 text-white">--</div>
+              </div>
+              <div class="bg-brand-surface/60 border border-brand-border rounded-xl p-3 text-center">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold">MTBF</span>
+                <div id="metric-mtbf" class="text-xl font-bold mono mt-1 text-brand-blue">--</div>
+              </div>
+              <div class="bg-brand-surface/60 border border-brand-border rounded-xl p-3 text-center">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold">MTTR</span>
+                <div id="metric-mttr" class="text-xl font-bold mono mt-1 text-gray-300">--</div>
+              </div>
+              <div class="bg-brand-surface/60 border border-brand-border rounded-xl p-3 text-center">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold">Mean 2&sigma; Drift</span>
+                <div id="metric-drift" class="text-xl font-bold mono mt-1 text-brand-amber">--</div>
+              </div>
+            </div>
+
+            <!-- LIVE TELEMETRY LINE CHART -->
+            <div class="bg-brand-surface/40 border border-brand-border rounded-xl p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center space-x-2">
+                  <i class="fa-solid fa-chart-line text-brand-blue"></i>
+                  <span>Real-Time Multi-Channel Telemetry Stream</span>
+                </h4>
+                <span class="text-[10px] text-gray-400 mono">Sample Rate: 1.0 Hz &bull; 25 Readings</span>
+              </div>
+              <div class="h-64 sm:h-72 w-full">
+                <canvas id="telemetryChart"></canvas>
+              </div>
+            </div>
+
+            <!-- ANOMALIES & THRESHOLD BREACH TABLE -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center space-x-2">
+                  <i class="fa-solid fa-triangle-exclamation text-brand-amber"></i>
+                  <span>Active Parameter Drift & Engineering Thresholds</span>
+                </h4>
+                <span class="text-[10px] text-gray-400">Evaluated deterministically via statistical variance</span>
+              </div>
+              <div class="overflow-x-auto border border-brand-border rounded-xl">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-brand-surface/80 text-gray-400 uppercase font-semibold text-[10px] border-b border-brand-border">
+                    <tr>
+                      <th class="py-2.5 px-3">Severity</th>
+                      <th class="py-2.5 px-3">Parameter Channel</th>
+                      <th class="py-2.5 px-3">Live Reading</th>
+                      <th class="py-2.5 px-3">Baseline</th>
+                      <th class="py-2.5 px-3">Limit Breach</th>
+                      <th class="py-2.5 px-3">Variance (&sigma;)</th>
+                      <th class="py-2.5 px-3">Engineering Interpretation</th>
+                    </tr>
+                  </thead>
+                  <tbody id="anomalies-table-body" class="divide-y divide-brand-border bg-brand-surface/30"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- AI DIAGNOSTIC REPORT PANEL (Rendered upon Gemma 4 trigger) -->
+            <div id="ai-report-panel" class="hidden bg-gradient-to-r from-purple-950/40 to-brand-navy border border-purple-500/30 rounded-2xl p-5 sm:p-6 space-y-4">
+              <div class="flex items-center justify-between border-b border-purple-500/20 pb-3">
+                <div class="flex items-center space-x-2 text-purple-300 font-bold text-sm sm:text-base">
+                  <i class="fa-solid fa-brain"></i>
+                  <span>Gemma 4 Physics-Informed Diagnostic Report</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span id="ai-urgency-badge" class="px-2.5 py-0.5 rounded text-xs font-bold uppercase bg-brand-rose/20 text-brand-rose border border-brand-rose/30">IMMEDIATE</span>
+                  <span id="ai-generated-by" class="text-[10px] text-gray-400 mono hidden sm:inline">Local Gemma 4 Engine</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div class="bg-brand-surface/60 border border-brand-border p-3.5 rounded-xl space-y-1">
+                  <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider flex items-center space-x-1">
+                    <i class="fa-solid fa-eye text-brand-blue"></i>
+                    <span>Deterministic Observation</span>
+                  </span>
+                  <p id="ai-obs" class="text-gray-200 mt-1 leading-relaxed">--</p>
+                </div>
+                <div class="bg-brand-surface/60 border border-brand-border p-3.5 rounded-xl space-y-1">
+                  <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider flex items-center space-x-1">
+                    <i class="fa-solid fa-microscope text-brand-amber"></i>
+                    <span>Root Cause Analysis</span>
+                  </span>
+                  <p id="ai-cause" class="text-gray-200 mt-1 leading-relaxed">--</p>
+                </div>
+                <div class="bg-brand-surface/60 border border-brand-border p-3.5 rounded-xl space-y-1">
+                  <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider flex items-center space-x-1">
+                    <i class="fa-solid fa-wrench text-brand-emerald"></i>
+                    <span>Actionable Maintenance Step</span>
+                  </span>
+                  <p id="ai-rec" class="text-gray-200 mt-1 leading-relaxed">--</p>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-end space-x-3 pt-2">
+                <button onclick="generateWorkOrderFromAI()" class="text-xs px-3.5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold transition flex items-center space-x-1.5">
+                  <i class="fa-solid fa-file-invoice"></i>
+                  <span>Generate Work Order</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 2: FLEET MANAGEMENT (CRUD & REGISTRY) -->
+      <!-- ========================================== -->
+      <div id="view-fleet" class="view-panel hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-boxes-stacked text-brand-blue"></i>
+              <span>Universal Asset Equipment Registry</span>
+            </h2>
+            <p class="text-xs text-gray-400">Digital twin profiles across Induction Motors, Centrifugal Pumps, and ICE Platforms</p>
+          </div>
+          <button onclick="openAddAssetModal()" class="text-xs px-4 py-2.5 rounded-lg bg-brand-blue hover:bg-sky-400 text-black font-bold transition flex items-center space-x-2 self-start sm:self-auto glow-blue">
+            <i class="fa-solid fa-plus"></i>
+            <span>Register New Equipment</span>
+          </button>
+        </div>
+
+        <!-- Filter & Search Controls -->
+        <div class="bg-brand-navy border border-brand-border rounded-xl p-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div class="w-full sm:w-72 relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-500 text-xs"></i>
+            <input type="text" id="fleet-search-input" oninput="renderFleetRegistryTable()" placeholder="Search assets by name or serial..." class="w-full bg-brand-surface border border-brand-border rounded-lg pl-8 pr-3 py-2 text-xs text-white focus:outline-none focus:border-brand-blue">
+          </div>
+          <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button onclick="filterFleetByCategory('ALL')" class="fleet-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-blue/20 text-brand-blue border border-brand-blue/40" data-cat="ALL">All Categories</button>
+            <button onclick="filterFleetByCategory('tpl-industrial-motor')" class="fleet-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-surface text-gray-400 border border-brand-border hover:text-white" data-cat="tpl-industrial-motor">Electric Motors</button>
+            <button onclick="filterFleetByCategory('tpl-centrifugal-pump')" class="fleet-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-surface text-gray-400 border border-brand-border hover:text-white" data-cat="tpl-centrifugal-pump">Centrifugal Pumps</button>
+            <button onclick="filterFleetByCategory('tpl-automobile-engine')" class="fleet-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-surface text-gray-400 border border-brand-border hover:text-white" data-cat="tpl-automobile-engine">Combustion Engines</button>
+          </div>
+        </div>
+
+        <!-- Fleet Grid / Table -->
+        <div class="bg-brand-navy border border-brand-border rounded-xl overflow-hidden">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-brand-surface/80 text-gray-400 uppercase font-semibold text-[10px] border-b border-brand-border">
+              <tr>
+                <th class="py-3 px-4">Equipment Name</th>
+                <th class="py-3 px-4">Category & Model</th>
+                <th class="py-3 px-4">Serial Number</th>
+                <th class="py-3 px-4">Operating Hours</th>
+                <th class="py-3 px-4">Condition</th>
+                <th class="py-3 px-4">Health Score</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="fleet-registry-tbody" class="divide-y divide-brand-border bg-brand-navy"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 3: EQUIPMENT DIAGNOSTICS -->
+      <!-- ========================================== -->
+      <div id="view-diagnostics" class="view-panel hidden space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-stethoscope text-brand-blue"></i>
+              <span>Deep-Dive Mechanical Engineering Diagnostics</span>
+            </h2>
+            <p class="text-xs text-gray-400">Physics formulas, ISO 10816-3 vibration spectrum, and NPSH cavitation curves</p>
+          </div>
+          <div class="text-xs text-gray-400">Asset: <strong id="diag-active-asset-name" class="text-brand-blue">--</strong></div>
+        </div>
+
+        <!-- ISO 10816-3 Vibration Severity Bands Card -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-5 space-y-4">
+            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-wave-square text-brand-blue"></i>
+              <span>ISO 10816-3 Mechanical Vibration Severity (RMS mm/s)</span>
+            </h3>
+            <p class="text-xs text-gray-400 leading-relaxed">
+              Standard evaluation zones for industrial machines with rigid/flexible foundations (15kW to 300kW).
+            </p>
+            <div class="space-y-2 text-xs">
+              <div class="flex items-center justify-between p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-emerald-300">
+                <span><strong>Zone A (&lt; 1.4 mm/s):</strong> Pristine / Newly Commissioned</span>
+                <span class="mono font-bold">NOMINAL</span>
+              </div>
+              <div class="flex items-center justify-between p-2.5 rounded-lg bg-sky-950/40 border border-sky-800/40 text-sky-300">
+                <span><strong>Zone B (1.4 – 2.8 mm/s):</strong> Unrestricted Long-term Operation</span>
+                <span class="mono font-bold">ACCEPTABLE</span>
+              </div>
+              <div class="flex items-center justify-between p-2.5 rounded-lg bg-amber-950/40 border border-amber-800/40 text-amber-300">
+                <span><strong>Zone C (2.8 – 7.1 mm/s):</strong> Restricted Operation / Drift</span>
+                <span class="mono font-bold">WARNING (2&sigma;)</span>
+              </div>
+              <div class="flex items-center justify-between p-2.5 rounded-lg bg-rose-950/40 border border-rose-800/40 text-rose-300">
+                <span><strong>Zone D (&gt; 7.1 mm/s):</strong> Dangerous / Immediate Failure Risk</span>
+                <span class="mono font-bold">CRITICAL (3&sigma;)</span>
+              </div>
+            </div>
+            <div class="p-3 bg-brand-surface rounded-lg border border-brand-border text-xs text-gray-300">
+              <span class="text-brand-blue font-bold">Current Asset Reading:</span> 
+              <span id="diag-vibration-val" class="mono font-bold text-white">--</span>
+              <span id="diag-vibration-zone" class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold">--</span>
+            </div>
+          </div>
+
+          <!-- NPSH & Cavitation Physics Card -->
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-5 space-y-4">
+            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-water text-cyan-400"></i>
+              <span>Centrifugal Pump NPSH &amp; Cavitation Margin</span>
+            </h3>
+            <p class="text-xs text-gray-400 leading-relaxed">
+              Calculates Net Positive Suction Head Margin ($NPSH_a - NPSH_r$) to detect violent micro-bubble vapor collapse against impeller vanes.
+            </p>
+            <div class="p-4 bg-brand-surface rounded-xl border border-brand-border space-y-2 mono text-xs text-gray-300">
+              <div class="text-brand-blue font-bold font-sans">Physics Governing Formula:</div>
+              <div>NPSH_a = (P_suction - P_vapor) / (&rho; &times; g) + (V^2 / 2g)</div>
+              <div>Cavitation Margin = NPSH_a - NPSH_r</div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div class="p-3 bg-brand-surface rounded-lg border border-brand-border">
+                <span class="text-gray-400 block text-[10px] uppercase font-semibold">Suction Pressure</span>
+                <span id="diag-suction-p" class="mono font-bold text-base text-white">--</span>
+              </div>
+              <div class="p-3 bg-brand-surface rounded-lg border border-brand-border">
+                <span class="text-gray-400 block text-[10px] uppercase font-semibold">Cavitation Acoustic RMS</span>
+                <span id="diag-cav-idx" class="mono font-bold text-base text-white">--</span>
+              </div>
+            </div>
+            <div id="diag-cav-alert" class="p-2.5 rounded-lg text-xs font-medium">--</div>
+          </div>
+        </div>
+
+        <!-- Thermal Dissipation & Lubrication Degradation -->
+        <div class="bg-brand-navy border border-brand-border rounded-xl p-5 space-y-3">
+          <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-temperature-arrow-up text-brand-amber"></i>
+            <span>Arrhenius Stator Winding &amp; Hydrodynamic Lubrication Degradation</span>
+          </h3>
+          <p class="text-xs text-gray-400">
+            For every 10&deg;C increase above thermal insulation limits (Class F: 155&deg;C, Class H: 180&deg;C), insulation lifespan is halved according to Montsinger's empirical rule. In combustion engines, oil viscosity drops below minimum hydrodynamic film thickness ($P_{oil} &lt; 1.2$ bar).
+          </p>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 4: PREDICTIVE MAINTENANCE -->
+      <!-- ========================================== -->
+      <div id="view-predictive" class="view-panel hidden space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-chart-line text-brand-blue"></i>
+            <span>Predictive Reliability &amp; RUL Forecasting</span>
+          </h2>
+          <p class="text-xs text-gray-400">Remaining Useful Life (RUL) estimation, MTBF decay models, and automated scheduling</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-4 space-y-2">
+            <span class="text-[10px] text-gray-400 uppercase font-bold">Estimated Fleet MTBF</span>
+            <div class="text-2xl font-extrabold text-white mono">2,480 <span class="text-xs font-normal text-gray-400">Operating Hours</span></div>
+            <p class="text-xs text-brand-emerald">Within target reliability envelope</p>
+          </div>
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-4 space-y-2">
+            <span class="text-[10px] text-gray-400 uppercase font-bold">Fleet Unplanned Downtime Risk</span>
+            <div class="text-2xl font-extrabold text-brand-amber mono">14.2%</div>
+            <p class="text-xs text-gray-400">Elevated due to Pump Cavitation</p>
+          </div>
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-4 space-y-2">
+            <span class="text-[10px] text-gray-400 uppercase font-bold">Projected Cost Savings</span>
+            <div class="text-2xl font-extrabold text-brand-blue mono">$48,500</div>
+            <p class="text-xs text-gray-400">Prevented secondary catastrophic seizures</p>
+          </div>
+        </div>
+
+        <!-- RUL Projection Cards -->
+        <div class="bg-brand-navy border border-brand-border rounded-xl p-5 space-y-4">
+          <h3 class="text-sm font-bold text-white">Remaining Useful Life (RUL) by Registered Asset</h3>
+          <div class="space-y-4" id="rul-bars-container"></div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 5: FAULT SIMULATION LAB -->
+      <!-- ========================================== -->
+      <div id="view-simulation" class="view-panel hidden space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-flask-vial text-brand-amber"></i>
+            <span>Virtual Sensor Fault Simulation Sandbox</span>
+          </h2>
+          <p class="text-xs text-gray-400">Inject synthetic failure modes and test deterministic 2&sigma; drift detection in real time</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Controls Panel -->
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-5 space-y-5">
+            <h3 class="text-sm font-bold text-white">Simulation Controls</h3>
+            
+            <div class="space-y-1.5">
+              <label class="text-xs text-gray-400">Target Asset</label>
+              <select id="sim-asset-select" onchange="updateSimSensorOptions()" class="w-full bg-brand-surface border border-brand-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-blue"></select>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-xs text-gray-400">Sensor Channel</label>
+              <select id="sim-sensor-select" class="w-full bg-brand-surface border border-brand-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-blue"></select>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-gray-400">Parameter Deviation</span>
+                <span id="sim-pct-display" class="mono font-bold text-brand-amber">+50%</span>
+              </div>
+              <input type="range" id="sim-pct-slider" min="-80" max="150" value="50" step="5" oninput="document.getElementById('sim-pct-display').innerText = (this.value >= 0 ? '+' : '') + this.value + '%'" class="w-full accent-brand-amber cursor-pointer">
+            </div>
+
+            <button onclick="executeFaultInjection()" class="w-full py-2.5 rounded-lg bg-brand-amber hover:bg-amber-400 text-black font-bold text-xs transition flex items-center justify-center space-x-2 glow-amber">
+              <i class="fa-solid fa-bolt"></i>
+              <span>Inject Fault &amp; Trigger Pipeline</span>
+            </button>
+
+            <!-- Preset Scenarios -->
+            <div class="pt-4 border-t border-brand-border space-y-2">
+              <span class="text-[10px] text-gray-400 uppercase font-bold">Golden MLH Demo Presets</span>
+              <div class="grid grid-cols-1 gap-2">
+                <button onclick="injectPreset('motor-bearing')" class="text-left px-3 py-2 rounded bg-brand-surface hover:bg-gray-800 text-xs text-gray-200 border border-brand-border flex items-center justify-between">
+                  <span>Induction Motor Bearing Wear (+65% Vib)</span>
+                  <i class="fa-solid fa-play text-[10px] text-brand-amber"></i>
+                </button>
+                <button onclick="injectPreset('pump-cavitation')" class="text-left px-3 py-2 rounded bg-brand-surface hover:bg-gray-800 text-xs text-gray-200 border border-brand-border flex items-center justify-between">
+                  <span>Centrifugal Pump Cavitation (-45% Suction)</span>
+                  <i class="fa-solid fa-play text-[10px] text-brand-amber"></i>
+                </button>
+                <button onclick="injectPreset('engine-thermal')" class="text-left px-3 py-2 rounded bg-brand-surface hover:bg-gray-800 text-xs text-gray-200 border border-brand-border flex items-center justify-between">
+                  <span>Engine Thermal Runaway (+50% Temp)</span>
+                  <i class="fa-solid fa-play text-[10px] text-brand-amber"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Output Comparison -->
+          <div class="lg:col-span-2 bg-brand-navy border border-brand-border rounded-xl p-5 space-y-4">
+            <h3 class="text-sm font-bold text-white">Live Fault Response Waveform</h3>
+            <div class="h-64 sm:h-80 w-full">
+              <canvas id="simTelemetryChart"></canvas>
+            </div>
+            <div id="sim-feedback-card" class="p-3.5 bg-brand-surface rounded-xl border border-brand-border text-xs text-gray-300">
+              Select a fault scenario above or adjust the slider to see instantaneous statistical drift.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 6: MAINTENANCE REPORTS -->
+      <!-- ========================================== -->
+      <div id="view-reports" class="view-panel hidden space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-file-contract text-brand-blue"></i>
+              <span>Engineering Work Orders &amp; Maintenance Reports</span>
+            </h2>
+            <p class="text-xs text-gray-400">Formal exportable maintenance documentation compliant with plant safety protocols</p>
+          </div>
+          <button onclick="window.print()" class="text-xs px-3.5 py-2 rounded-lg bg-brand-surface hover:bg-gray-800 text-gray-200 border border-brand-border flex items-center space-x-2">
+            <i class="fa-solid fa-print"></i>
+            <span>Print / Save PDF</span>
+          </button>
+        </div>
+
+        <div id="report-printable-area" class="bg-brand-navy border border-brand-border rounded-2xl p-6 space-y-6 text-xs">
+          <div class="flex justify-between items-start border-b border-brand-border pb-4">
+            <div>
+              <div class="text-base font-bold text-white">WORK ORDER #WO-2026-0841</div>
+              <div class="text-gray-400">Generated by MechShield AI Automated Diagnostics</div>
+            </div>
+            <div class="text-right mono text-gray-400">
+              <div>Date: <span id="report-date" class="text-white">--</span></div>
+              <div>Priority: <strong id="report-priority" class="text-brand-rose">HIGH / URGENT</strong></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="bg-brand-surface p-3 rounded-lg border border-brand-border">
+              <span class="text-gray-400 text-[10px] uppercase font-bold">Equipment</span>
+              <div id="report-asset-name" class="font-bold text-white mt-1">Main Cooling Loop Pump #2</div>
+            </div>
+            <div class="bg-brand-surface p-3 rounded-lg border border-brand-border">
+              <span class="text-gray-400 text-[10px] uppercase font-bold">Serial Number</span>
+              <div id="report-serial" class="mono text-gray-300 mt-1">PMP-CENT-502-B</div>
+            </div>
+            <div class="bg-brand-surface p-3 rounded-lg border border-brand-border">
+              <span class="text-gray-400 text-[10px] uppercase font-bold">Operating Hours</span>
+              <div id="report-hours" class="mono text-gray-300 mt-1">5,760.0 h</div>
+            </div>
+            <div class="bg-brand-surface p-3 rounded-lg border border-brand-border">
+              <span class="text-gray-400 text-[10px] uppercase font-bold">Health Score</span>
+              <div id="report-health" class="font-bold text-brand-amber mt-1">58.4%</div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-bold text-white uppercase text-[11px] tracking-wider text-brand-blue">1. Engineering Observation</div>
+            <p id="report-obs-text" class="p-3 bg-brand-surface rounded-lg border border-brand-border text-gray-300 leading-relaxed">
+              Suction pressure dropped to 1.06 bar (critical limit: 1.10 bar). Concurrently, cavitation acoustic sensor recorded 1.25 RMS g (+2.2&sigma; statistical variance from baseline).
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-bold text-white uppercase text-[11px] tracking-wider text-brand-amber">2. Root Cause Analysis</div>
+            <p id="report-cause-text" class="p-3 bg-brand-surface rounded-lg border border-brand-border text-gray-300 leading-relaxed">
+              Severe cavitation event. Available Net Positive Suction Head ($NPSH_a$) has fallen below required $NPSH_r$, resulting in vapor bubble collapse against impeller vanes and progressive erosion.
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-bold text-white uppercase text-[11px] tracking-wider text-brand-emerald">3. Mandated Maintenance &amp; Safety Protocol</div>
+            <ul id="report-steps-list" class="list-disc list-inside space-y-1 p-3 bg-brand-surface rounded-lg border border-brand-border text-gray-300">
+              <li>Execute Lock-Out / Tag-Out (LOTO) on Pump electrical disconnect #3B.</li>
+              <li>Inspect and clear debris from suction intake strainer and verify suction line valve is 100% open.</li>
+              <li>Check inlet liquid temperature to ensure no vapor pressure increase.</li>
+              <li>Perform vibration re-check post-restart to confirm acoustic RMS &lt; 0.60 g.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 7: HISTORICAL ANALYTICS -->
+      <!-- ========================================== -->
+      <div id="view-analytics" class="view-panel hidden space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-chart-pie text-brand-blue"></i>
+            <span>Fleet Historical Reliability Analytics</span>
+          </h2>
+          <p class="text-xs text-gray-400">Failure distributions, sensor correlation matrices, and 30-day OEE trends</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-5 space-y-4">
+            <h3 class="text-sm font-bold text-white">30-Day Fleet Overall Equipment Effectiveness (OEE)</h3>
+            <div class="h-64 w-full">
+              <canvas id="oeeHistoryChart"></canvas>
+            </div>
+          </div>
+          <div class="bg-brand-navy border border-brand-border rounded-xl p-5 space-y-4">
+            <h3 class="text-sm font-bold text-white">Failure Mode Distribution by Subsystem</h3>
+            <div class="h-64 w-full flex items-center justify-center">
+              <canvas id="failureDistributionChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 8: AI ENGINEERING ASSISTANT -->
+      <!-- ========================================== -->
+      <div id="view-ai" class="view-panel hidden space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-brain text-purple-400"></i>
+            <span>Gemma 4 Physics-Informed AI Reliability Assistant</span>
+          </h2>
+          <p class="text-xs text-gray-400">Ask technical questions regarding ISO vibration standards, pump cavitation, or thermal dissipation</p>
+        </div>
+
+        <!-- Pre-built Question Chips -->
+        <div class="flex flex-wrap gap-2 text-xs">
+          <button onclick="askPresetAi('What are the ISO 10816-3 vibration limits for a 45kW motor?')" class="px-3 py-1.5 rounded-full bg-brand-surface hover:bg-gray-800 text-gray-300 border border-brand-border">
+            &bull; ISO 10816-3 Vibration Limits
+          </button>
+          <button onclick="askPresetAi('How do I diagnose pump cavitation using suction pressure and vibration?')" class="px-3 py-1.5 rounded-full bg-brand-surface hover:bg-gray-800 text-gray-300 border border-brand-border">
+            &bull; Diagnosing Pump Cavitation
+          </button>
+          <button onclick="askPresetAi('Explain the difference between 1X and 2X RPM harmonics in motor imbalance.')" class="px-3 py-1.5 rounded-full bg-brand-surface hover:bg-gray-800 text-gray-300 border border-brand-border">
+            &bull; 1X vs 2X RPM Harmonics
+          </button>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="bg-brand-navy border border-brand-border rounded-2xl flex flex-col h-[480px]">
+          <div id="ai-chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs">
+            <div class="flex items-start space-x-2.5">
+              <div class="w-7 h-7 rounded-lg bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 shrink-0">
+                <i class="fa-solid fa-robot"></i>
+              </div>
+              <div class="bg-brand-surface p-3 rounded-xl border border-brand-border text-gray-200 max-w-xl leading-relaxed">
+                Hello. I am the <strong>MechShield Gemma 4 Reliability Engine</strong>. I combine deterministic physics calculations with generative engineering knowledge. Select an asset or ask any question regarding machine health, failure modes, or maintenance protocols.
+              </div>
+            </div>
+          </div>
+
+          <div class="p-3 border-t border-brand-border bg-brand-surface/40 flex items-center space-x-2">
+            <input type="text" id="ai-chat-input" onkeydown="if(event.key === 'Enter') sendAiChatMessage()" placeholder="Ask about bearing degradation, ISO standards, or LOTO procedures..." class="flex-1 bg-brand-surface border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+            <button onclick="sendAiChatMessage()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition flex items-center space-x-1.5">
+              <span>Send</span>
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 9: PLATFORM SETTINGS -->
+      <!-- ========================================== -->
+      <div id="view-settings" class="view-panel hidden space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-sliders text-brand-blue"></i>
+            <span>Platform Configuration &amp; Backend API</span>
+          </h2>
+          <p class="text-xs text-gray-400">Manage API connectivity, alert variance sensitivities, and simulation speed</p>
+        </div>
+
+        <div class="bg-brand-navy border border-brand-border rounded-xl p-5 space-y-6 max-w-3xl">
+          <!-- Backend Connection -->
+          <div class="space-y-3 pb-5 border-b border-brand-border">
+            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-plug text-brand-blue"></i>
+              <span>Backend API Server Connection</span>
+            </h3>
+            <p class="text-xs text-gray-400 leading-relaxed">
+              When running locally, connect to <code class="text-brand-blue">http://localhost:8000/api</code>. When hosted on GitHub Pages without an external backend, the platform automatically utilizes its embedded client-side physics engine.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input type="text" id="settings-api-url" value="http://localhost:8000/api" class="flex-1 bg-brand-surface border border-brand-border rounded-lg px-3 py-2 text-xs text-white mono focus:outline-none focus:border-brand-blue">
+              <button onclick="testAndSaveApiUrl()" class="px-4 py-2 rounded-lg bg-brand-blue hover:bg-sky-400 text-black font-bold text-xs transition">
+                Test &amp; Save Endpoint
+              </button>
+            </div>
+            <div id="settings-conn-result" class="text-xs mt-1"></div>
+          </div>
+
+          <!-- Alert Variance Threshold -->
+          <div class="space-y-3 pb-5 border-b border-brand-border">
+            <h3 class="text-sm font-bold text-white">Statistical Drift Sensitivity Threshold</h3>
+            <p class="text-xs text-gray-400">
+              Determines standard deviations (&sigma;) from historical baseline required to trip WARNING and CRITICAL alarms.
+            </p>
+            <div class="flex items-center space-x-4">
+              <label class="flex items-center space-x-2 text-xs text-gray-300 cursor-pointer">
+                <input type="radio" name="sigma_thresh" value="1.5" class="accent-brand-blue">
+                <span>1.5&sigma; (Strict / Aerospace)</span>
+              </label>
+              <label class="flex items-center space-x-2 text-xs text-gray-300 cursor-pointer">
+                <input type="radio" name="sigma_thresh" value="2.0" checked class="accent-brand-blue">
+                <span>2.0&sigma; (Standard Industrial - Recommended)</span>
+              </label>
+              <label class="flex items-center space-x-2 text-xs text-gray-300 cursor-pointer">
+                <input type="radio" name="sigma_thresh" value="3.0" class="accent-brand-blue">
+                <span>3.0&sigma; (Tolerant / Heavy Mining)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Units of Measurement -->
+          <div class="space-y-3 pb-5 border-b border-brand-border">
+            <h3 class="text-sm font-bold text-white">Units of Measurement</h3>
+            <div class="flex items-center space-x-4 text-xs text-gray-300">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" name="unit_sys" value="metric" checked class="accent-brand-blue">
+                <span>SI Metric (&deg;C, bar, mm/s, m&sup3;/h)</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" name="unit_sys" value="imperial" class="accent-brand-blue">
+                <span>Imperial (&deg;F, PSI, in/s, GPM)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Reset Local Storage -->
+          <div class="flex items-center justify-between pt-2">
+            <div>
+              <div class="text-xs font-bold text-white">Restore Factory Telemetry &amp; Assets</div>
+              <div class="text-[11px] text-gray-500">Clears injected faults and restores default golden machine profiles</div>
+            </div>
+            <button onclick="restoreFactoryDefaults()" class="px-3.5 py-2 rounded-lg bg-brand-surface hover:bg-gray-800 text-gray-300 border border-brand-border text-xs">
+              Reset State
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ADD / EDIT ASSET MODAL -->
+  <div id="asset-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-brand-navy border border-brand-border rounded-2xl w-full max-w-lg p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-brand-border pb-3">
+        <h3 id="asset-modal-title" class="font-bold text-white text-base">Register New Equipment</h3>
+        <button onclick="closeAssetModal()" class="text-gray-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="asset-form" onsubmit="handleAssetFormSubmit(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="form-asset-id">
+        
+        <div>
+          <label class="block text-gray-400 mb-1">Equipment Name *</label>
+          <input type="text" id="form-asset-name" required placeholder="e.g. Auxiliary Booster Pump #1" class="w-full bg-brand-surface border border-brand-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-blue">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-gray-400 mb-1">Category Profile *</label>
+            <select id="form-asset-category" class="w-full bg-brand-surface border border-brand-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-blue">
+              <option value="tpl-industrial-motor">Electric Motor (45kW Induction)</option>
+              <option value="tpl-centrifugal-pump">Centrifugal Water Pump</option>
+              <option value="tpl-automobile-engine">Automobile Combustion Engine</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">Serial Number *</label>
+            <input type="text" id="form-asset-serial" required placeholder="e.g. PMP-AUX-901" class="w-full bg-brand-surface border border-brand-border rounded-lg px-3 py-2 text-white mono focus:outline-none focus:border-brand-blue">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-gray-400 mb-1">Manufacturer</label>
+            <input type="text" id="form-asset-mfr" placeholder="e.g. Siemens / KSB" class="w-full bg-brand-surface border border-brand-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-blue">
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">Operating Hours</label>
+            <input type="number" id="form-asset-hours" value="1200" step="10" class="w-full bg-brand-surface border border-brand-border rounded-lg px-3 py-2 text-white mono focus:outline-none focus:border-brand-blue">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-3 border-t border-brand-border">
+          <button type="button" onclick="closeAssetModal()" class="px-4 py-2 rounded-lg bg-brand-surface hover:bg-gray-800 text-gray-300">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-brand-blue hover:bg-sky-400 text-black font-bold">Save Asset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EMBEDDED DETERMINISTIC PHYSICS & CLIENT-SIDE RELIABILITY SCRIPT -->
+  <script>
+    // --- 1. GOLDEN PROFILES & INITIAL DATA STORE ---
+    const TEMPLATES = {
+      'tpl-industrial-motor': {
+        id: 'tpl-industrial-motor',
+        name: '45kW Industrial Induction Motor',
+        category: 'IndustrialMotor',
+        sensors: {
+          vibration: { unit: 'mm/s', nominal: 2.1, min_safe: 0.5, max_safe: 4.5, critical_high: 7.1 },
+          temperature: { unit: '°C', nominal: 62.0, min_safe: 20.0, max_safe: 85.0, critical_high: 105.0 },
+          current_draw: { unit: 'A', nominal: 28.5, min_safe: 10.0, max_safe: 40.0, critical_high: 52.0 },
+          rpm: { unit: 'RPM', nominal: 1485.0, min_safe: 1400.0, max_safe: 1550.0, critical_high: 1650.0 }
+        },
+        failure_modes: [
+          { name: 'Bearing Race Wear', trigger_rule: 'vibration > 4.5 and temperature > 80.0', urgency: 'ELEVATED', recommended_action: 'Perform spectral vibration FFT analysis; inspect spherical roller bearing lubrication.' },
+          { name: 'Stator Overheating', trigger_rule: 'temperature > 85.0 and current_draw > 40.0', urgency: 'IMMEDIATE', recommended_action: 'Reduce motor load immediately; check cooling fan cowl for blockages.' }
+        ]
+      },
+      'tpl-centrifugal-pump': {
+        id: 'tpl-centrifugal-pump',
+        name: 'High-Pressure Centrifugal Water Pump',
+        category: 'CentrifugalPump',
+        sensors: {
+          suction_pressure: { unit: 'bar', nominal: 1.80, min_safe: 1.20, max_safe: 3.50, critical_low: 1.10, critical_high: 5.00 },
+          discharge_pressure: { unit: 'bar', nominal: 6.50, min_safe: 4.50, max_safe: 9.00, critical_low: 3.80, critical_high: 11.00 },
+          flow_rate: { unit: 'm³/h', nominal: 120.0, min_safe: 90.0, max_safe: 140.0, critical_low: 75.0, critical_high: 160.0 },
+          cavitation_index: { unit: 'RMS g', nominal: 0.45, min_safe: 0.05, max_safe: 0.90, critical_high: 1.20 }
+        },
+        failure_modes: [
+          { name: 'Cavitation Damage', trigger_rule: 'suction_pressure < 1.20 and cavitation_index > 0.90', urgency: 'IMMEDIATE', recommended_action: 'Check suction strainer for clogs, verify suction valve is 100% open, lower liquid temperature.' },
+          { name: 'Impeller Clog / Line Restriction', trigger_rule: 'flow_rate < 90.0 and discharge_pressure > 8.5', urgency: 'ELEVATED', recommended_action: 'Isolate pump and inspect impeller volute casing for particulate accumulation.' }
+        ]
+      },
+      'tpl-automobile-engine': {
+        id: 'tpl-automobile-engine',
+        name: '2.0L Turbocharged Diesel Engine',
+        category: 'AutomobileEngine',
+        sensors: {
+          coolant_temp: { unit: '°C', nominal: 90.0, min_safe: 70.0, max_safe: 102.0, critical_high: 115.0 },
+          oil_pressure: { unit: 'bar', nominal: 3.80, min_safe: 1.80, max_safe: 6.00, critical_low: 1.40, critical_high: 7.50 },
+          rpm: { unit: 'RPM', nominal: 2200.0, min_safe: 750.0, max_safe: 4500.0, critical_high: 5200.0 },
+          misfire_rate: { unit: 'events/krev', nominal: 0.0, min_safe: 0.0, max_safe: 2.0, critical_high: 5.0 }
+        },
+        failure_modes: [
+          { name: 'Thermal Runaway / Cooling Failure', trigger_rule: 'coolant_temp > 105.0', urgency: 'IMMEDIATE', recommended_action: 'Stop engine immediately; inspect water pump belt tension, thermostat, and coolant level.' },
+          { name: 'Hydrodynamic Oil Film Loss', trigger_rule: 'oil_pressure < 1.80 at rpm > 1800', urgency: 'IMMEDIATE', recommended_action: 'Inspect engine oil level, check oil pump pickup screen, and check for fuel dilution.' }
+        ]
+      }
+    };
+
+    const INITIAL_ASSETS = [
+      {
+        id: 'asset-motor-01',
+        name: 'Primary Compressor Motor #4',
+        category_id: 'tpl-industrial-motor',
+        serial_number: 'IND-MTR-8841-A',
+        manufacturer: 'Siemens Industrial',
+        total_hours: 2880.0,
+        status: 'HEALTHY'
+      },
+      {
+        id: 'asset-pump-01',
+        name: 'Main Cooling Loop Pump #2',
+        category_id: 'tpl-centrifugal-pump',
+        serial_number: 'PMP-CENT-502-B',
+        manufacturer: 'KSB Pumps',
+        total_hours: 5760.0,
+        status: 'WARNING'
+      },
+      {
+        id: 'asset-engine-01',
+        name: 'Fleet Patrol Vehicle Engine (VIN: 9K20)',
+        category_id: 'tpl-automobile-engine',
+        serial_number: 'ENG-20T-0988',
+        manufacturer: 'Cummins Diesel',
+        total_hours: 1420.0,
+        status: 'CRITICAL'
+      }
+    ];
+
+    // --- 2. STATE MANAGEMENT ---
+    let assets = JSON.parse(localStorage.getItem('mechshield_assets')) || INITIAL_ASSETS;
+    let telemetryStore = JSON.parse(localStorage.getItem('mechshield_telemetry')) || {};
+    let currentAssetId = 'asset-motor-01';
+    let currentCategoryFilter = 'ALL';
+    let telemetryChart = null;
+    let simTelemetryChart = null;
+    let oeeHistoryChart = null;
+    let failureDistributionChart = null;
+
+    // Detect if we can talk to a local backend API
+    let API_BASE = localStorage.getItem('mechshield_api_url') || (
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:8000/api'
+        : ''
+    );
+    let isConnectedToBackend = false;
+
+    // --- 3. DETERMINISTIC TELEMETRY & PHYSICS SIMULATOR ---
+    function initTelemetryIfEmpty() {
+      if (Object.keys(telemetryStore).length === 0) {
+        const now = Date.now();
+        assets.forEach(asset => {
+          telemetryStore[asset.id] = {};
+          const tpl = TEMPLATES[asset.category_id] || TEMPLATES['tpl-industrial-motor'];
+          Object.keys(tpl.sensors).forEach(sKey => {
+            const sDef = tpl.sensors[sKey];
+            const nominal = sDef.nominal;
+            const readings = [];
+            for (let i = 0; i < 25; i++) {
+              const t = now - (25 - i) * 5000;
+              let varVal = (Math.random() - 0.5) * 0.06 * nominal;
+              let drift = 0.0;
+              if (asset.status === 'WARNING') {
+                if (sKey === 'suction_pressure') drift = -(i / 25.0) * (nominal * 0.38);
+                if (sKey === 'cavitation_index') drift = (i / 25.0) * (nominal * 1.8);
+              } else if (asset.status === 'CRITICAL') {
+                if (sKey === 'coolant_temp') drift = (i / 25.0) * (nominal * 0.3);
+                if (sKey === 'oil_pressure') drift = -(i / 25.0) * (nominal * 0.55);
+              }
+              const val = Math.max(0.01, parseFloat((nominal + varVal + drift).toFixed(2)));
+              readings.push({ timestamp: t, value: val });
+            }
+            telemetryStore[asset.id][sKey] = readings;
+          });
+        });
+        saveTelemetry();
+      }
+    }
+
+    function saveAssets() {
+      localStorage.setItem('mechshield_assets', JSON.stringify(assets));
+    }
+    function saveTelemetry() {
+      localStorage.setItem('mechshield_telemetry', JSON.stringify(telemetryStore));
+    }
+
+    // --- 4. DETERMINISTIC 2σ STATISTICAL DRIFT & HEALTH ANALYSIS ---
+    function analyzeAssetHealthLocal(assetId) {
+      const asset = assets.find(a => a.id === assetId) || assets[0];
+      const tpl = TEMPLATES[asset.category_id] || TEMPLATES['tpl-industrial-motor'];
+      const assetTelemetry = telemetryStore[asset.id] || {};
+      
+      const anomalies = [];
+      let worstSeverity = 'HEALTHY';
+      let totalDrift = 0;
+      let driftCount = 0;
+
+      Object.keys(tpl.sensors).forEach(sKey => {
+        const sDef = tpl.sensors[sKey];
+        const series = assetTelemetry[sKey] || [];
+        if (series.length === 0) return;
+
+        const currentVal = series[series.length - 1].value;
+        const historyVals = series.slice(0, -1).map(p => p.value);
+        
+        // Calculate mean & std
+        const mean = historyVals.length ? (historyVals.reduce((a, b) => a + b, 0) / historyVals.length) : sDef.nominal;
+        const variance = historyVals.length ? (historyVals.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / historyVals.length) : 0.001;
+        const std = Math.sqrt(variance) || 0.001;
+
+        const zScore = parseFloat(((currentVal - mean) / std).toFixed(2));
+        const driftPct = Math.abs((currentVal - sDef.nominal) / (sDef.nominal || 1)) * 100;
+        totalDrift += driftPct;
+        driftCount++;
+
+        // Threshold violations
+        const critHigh = sDef.critical_high !== undefined && currentVal >= sDef.critical_high;
+        const critLow = sDef.critical_low !== undefined && currentVal <= sDef.critical_low;
+        const warnHigh = sDef.max_safe !== undefined && currentVal >= sDef.max_safe;
+        const warnLow = sDef.min_safe !== undefined && currentVal <= sDef.min_safe;
+
+        if (critHigh || critLow) {
+          worstSeverity = 'CRITICAL';
+          anomalies.push({
+            sensor_type: sKey,
+            severity: 'CRITICAL',
+            current_value: currentVal,
+            baseline: sDef.nominal,
+            threshold_violated: critHigh ? sDef.critical_high : sDef.critical_low,
+            z_score: zScore,
+            message: `CRITICAL limit breach: ${sKey} at ${currentVal} ${sDef.unit}`
+          });
+        } else if (warnHigh || warnLow || Math.abs(zScore) >= 2.0) {
+          if (worstSeverity !== 'CRITICAL') worstSeverity = 'WARNING';
+          anomalies.push({
+            sensor_type: sKey,
+            severity: 'WARNING',
+            current_value: currentVal,
+            baseline: sDef.nominal,
+            threshold_violated: warnHigh ? sDef.max_safe : (warnLow ? sDef.min_safe : `${zScore}σ`),
+            z_score: zScore,
+            message: `2σ statistical variance detected: ${sKey} at ${currentVal} ${sDef.unit}`
+          });
+        }
+      });
+
+      const avgDrift = driftCount ? parseFloat((totalDrift / driftCount).toFixed(1)) : 0.0;
+      
+      let healthScore = 98.5;
+      if (worstSeverity === 'CRITICAL') healthScore = Math.max(18.0, parseFloat((48.0 - avgDrift * 0.4).toFixed(1)));
+      else if (worstSeverity === 'WARNING') healthScore = Math.max(58.0, parseFloat((84.0 - avgDrift * 0.35).toFixed(1)));
+      else healthScore = Math.min(100.0, parseFloat((98.5 - avgDrift * 0.15).toFixed(1)));
+
+      const eff = Math.min(99.0, Math.max(50.0, parseFloat((healthScore * 0.95).toFixed(1))));
+      const avail = worstSeverity === 'HEALTHY' ? 98.4 : (worstSeverity === 'WARNING' ? 91.2 : 74.0);
+      const quality = worstSeverity === 'HEALTHY' ? 99.1 : 94.5;
+      const oee = parseFloat(((avail / 100) * (eff / 100) * (quality / 100) * 100).toFixed(1));
+
+      return {
+        asset,
+        template: tpl,
+        status: worstSeverity,
+        health_score: healthScore,
+        metrics: {
+          mechanical_efficiency: eff,
+          operating_availability: avail,
+          mtbf_hours: worstSeverity === 'HEALTHY' ? 3200 : (worstSeverity === 'WARNING' ? 1400 : 380),
+          mttr_hours: worstSeverity === 'HEALTHY' ? 4.5 : (worstSeverity === 'WARNING' ? 8.0 : 24.0),
+          oee: oee,
+          performance_drift_pct: avgDrift
+        },
+        anomalies,
+        historical_telemetry: assetTelemetry
+      };
+    }
+
+    // --- 5. NETWORK ENGINE & API SYNC ---
+    async function testBackendConnection() {
+      if (!API_BASE) {
+        setSimulatedMode('SIMULATED (Physics Engine)');
+        return false;
+      }
+      try {
+        const ctrl = new AbortController();
+        const timeout = setTimeout(() => ctrl.abort(), 2000);
+        const res = await fetch(API_BASE + '/fleet/summary', { signal: ctrl.signal });
+        clearTimeout(timeout);
+        if (res.ok) {
+          isConnectedToBackend = true;
+          setLiveMode('LIVE (Connected to Backend)');
+          return true;
+        }
+      } catch (e) {
+        // Fallback to simulated mode
+      }
+      isConnectedToBackend = false;
+      setSimulatedMode('SIMULATED (Physics Engine)');
+      return false;
+    }
+
+    function setLiveMode(text) {
+      const dot = document.getElementById('data-mode-dot');
+      const badge = document.getElementById('data-mode-text');
+      dot.className = 'w-2 h-2 rounded-full bg-brand-emerald animate-pulse';
+      badge.innerText = text;
+      badge.className = 'text-brand-emerald font-semibold text-[11px] sm:text-xs';
+    }
+
+    function setSimulatedMode(text) {
+      const dot = document.getElementById('data-mode-dot');
+      const badge = document.getElementById('data-mode-text');
+      dot.className = 'w-2 h-2 rounded-full bg-brand-blue animate-pulse';
+      badge.innerText = text;
+      badge.className = 'text-brand-blue font-semibold text-[11px] sm:text-xs';
+    }
+
+    // --- 6. VIEW NAVIGATION ---
+    function switchView(viewName) {
+      document.querySelectorAll('.view-panel').forEach(el => el.classList.add('hidden'));
+      const activePanel = document.getElementById('view-' + viewName);
+      if (activePanel) activePanel.classList.remove('hidden');
+
+      // Update sidebar nav state
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.getAttribute('data-view') === viewName) {
+          btn.className = 'nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-brand-blue bg-brand-blue/10 border border-brand-blue/30';
+        } else {
+          btn.className = 'nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:text-white hover:bg-brand-surface';
+        }
+      });
+
+      // Special initializations per view
+      if (viewName === 'fleet') renderFleetRegistryTable();
+      if (viewName === 'diagnostics') renderDiagnosticsView();
+      if (viewName === 'predictive') renderPredictiveView();
+      if (viewName === 'simulation') renderSimulationView();
+      if (viewName === 'reports') renderReportsView();
+      if (viewName === 'analytics') renderAnalyticsCharts();
+
+      // Close mobile drawer if open
+      if (window.innerWidth < 1024) {
+        document.getElementById('app-sidebar').classList.add('-translate-x-full');
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('app-sidebar');
+      sidebar.classList.toggle('-translate-x-full');
+    }
+
+    // --- 7. DASHBOARD DATA RENDERING ---
+    async function refreshDashboard() {
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.classList.add('fa-spin');
+
+      let fleetData = null;
+      let assetHealthData = null;
+
+      if (isConnectedToBackend) {
+        try {
+          const res = await fetch(API_BASE + '/fleet/summary');
+          if (res.ok) fleetData = await res.json();
+          const hRes = await fetch(API_BASE + '/assets/' + currentAssetId + '/health');
+          if (hRes.ok) assetHealthData = await hRes.json();
+        } catch (e) {
+          isConnectedToBackend = false;
+          setSimulatedMode('SIMULATED (Physics Engine)');
+        }
+      }
+
+      // If local simulated mode
+      if (!fleetData || !assetHealthData) {
+        let healthy = 0, warning = 0, critical = 0, oeeSum = 0;
+        assets.forEach(a => {
+          const h = analyzeAssetHealthLocal(a.id);
+          a.status = h.status;
+          a.health_score = h.health_score;
+          a.oee = h.metrics.oee;
+          if (h.status === 'HEALTHY') healthy++;
+          else if (h.status === 'WARNING') warning++;
+          else critical++;
+          oeeSum += h.metrics.oee;
+        });
+        saveAssets();
+
+        fleetData = {
+          total_assets: assets.length,
+          healthy_count: healthy,
+          warning_count: warning,
+          critical_count: critical,
+          fleet_oee_average: parseFloat((oeeSum / (assets.length || 1)).toFixed(1))
+        };
+        assetHealthData = analyzeAssetHealthLocal(currentAssetId);
+      }
+
+      // Update KPI counters
+      document.getElementById('kpi-total').innerText = fleetData.total_assets;
+      document.getElementById('kpi-healthy').innerText = fleetData.healthy_count;
+      document.getElementById('kpi-warning').innerText = fleetData.warning_count;
+      document.getElementById('kpi-critical').innerText = fleetData.critical_count;
+      document.getElementById('kpi-oee').innerText = fleetData.fleet_oee_average + '%';
+
+      document.getElementById('header-healthy-count').innerText = fleetData.healthy_count;
+      document.getElementById('header-warning-count').innerText = fleetData.warning_count;
+      document.getElementById('header-critical-count').innerText = fleetData.critical_count;
+      document.getElementById('nav-fleet-count').innerText = fleetData.total_assets;
+
+      // Render Asset Cards
+      renderAssetCards();
+
+      // Render Detail Deep-Dive
+      renderAssetDetail(assetHealthData);
+
+      setTimeout(() => {
+        if (icon) icon.classList.remove('fa-spin');
+      }, 500);
+    }
+
+    function renderAssetCards() {
+      const container = document.getElementById('asset-cards');
+      container.innerHTML = '';
+
+      assets.forEach(asset => {
+        const isSelected = asset.id === currentAssetId;
+        const color = asset.status === 'HEALTHY' ? 'brand-emerald' : (asset.status === 'WARNING' ? 'brand-amber' : 'brand-rose');
+        const badgeBg = asset.status === 'HEALTHY' ? 'bg-emerald-950/60 text-brand-emerald border-emerald-800' : 
+                        (asset.status === 'WARNING' ? 'bg-amber-950/60 text-brand-amber border-amber-800' : 'bg-rose-950/60 text-brand-rose border-rose-800');
+
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-xl border transition cursor-pointer ${
+          isSelected ? `bg-brand-surface border-${color} glow-${color.split('-')[1]}` : 'bg-brand-navy border-brand-border hover:border-gray-700'
+        }`;
+
+        card.onclick = () => {
+          currentAssetId = asset.id;
+          refreshDashboard();
+        };
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs uppercase font-mono text-gray-400">${asset.id}</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${badgeBg}">${asset.status}</span>
+          </div>
+          <div class="font-bold text-sm text-white mt-1.5 truncate">${asset.name}</div>
+          <div class="flex items-center justify-between text-xs mt-3 pt-2 border-t border-brand-border">
+            <span class="text-gray-400">Health: <strong class="text-white">${asset.health_score || '--'}%</strong></span>
+            <span class="text-gray-400">OEE: <strong class="text-${color}">${asset.oee || '--'}%</strong></span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderAssetDetail(data) {
+      document.getElementById('detail-name').innerText = data.asset.name;
+      document.getElementById('detail-desc').innerText = `Profile: ${data.template.name} • Serial: ${data.asset.serial_number}`;
+      
+      const badge = document.getElementById('detail-badge');
+      badge.innerText = data.status;
+      badge.className = `px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+        data.status === 'HEALTHY' ? 'bg-emerald-950 text-brand-emerald border border-emerald-800' :
+        data.status === 'WARNING' ? 'bg-amber-950 text-brand-amber border border-amber-800' :
+        'bg-rose-950 text-brand-rose border border-rose-800'
+      }`;
+
+      const scoreEl = document.getElementById('detail-health-score');
+      scoreEl.innerHTML = `${data.health_score}<span class="text-xs font-normal text-gray-400">/100</span>`;
+      scoreEl.className = `text-2xl font-extrabold mono mt-1 ${
+        data.health_score >= 80 ? 'text-brand-emerald' : (data.health_score >= 55 ? 'text-brand-amber' : 'text-brand-rose')
+      }`;
+
+      document.getElementById('metric-eff').innerText = data.metrics.mechanical_efficiency + '%';
+      document.getElementById('metric-avail').innerText = data.metrics.operating_availability + '%';
+      document.getElementById('metric-mtbf').innerText = data.metrics.mtbf_hours + ' h';
+      document.getElementById('metric-mttr').innerText = data.metrics.mttr_hours + ' h';
+      document.getElementById('metric-drift').innerText = (data.metrics.performance_drift_pct || 0) + '%';
+
+      // Render anomalies table
+      const tbody = document.getElementById('anomalies-table-body');
+      tbody.innerHTML = '';
+      if (!data.anomalies || data.anomalies.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-gray-500">All sensor channels operating strictly within normal baseline tolerances.</td></tr>`;
+      } else {
+        data.anomalies.forEach(a => {
+          const isCrit = a.severity === 'CRITICAL';
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="py-2.5 px-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isCrit ? 'bg-rose-950 text-brand-rose border border-rose-800' : 'bg-amber-950 text-brand-amber border border-amber-800'}">
+                ${a.severity}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 font-semibold text-gray-200">${a.sensor_type.replace('_', ' ')}</td>
+            <td class="py-2.5 px-3 mono font-bold text-white">${a.current_value}</td>
+            <td class="py-2.5 px-3 mono text-gray-400">${a.baseline}</td>
+            <td class="py-2.5 px-3 mono text-gray-300">${a.threshold_violated}</td>
+            <td class="py-2.5 px-3 mono text-brand-amber">${a.z_score !== undefined ? a.z_score + 'σ' : '—'}</td>
+            <td class="py-2.5 px-3 text-gray-300">${a.message}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+
+      // Render telemetry chart
+      renderTelemetryChart('telemetryChart', data);
+    }
+
+    function renderTelemetryChart(canvasId, data) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
+      if (telemetryChart && canvasId === 'telemetryChart') telemetryChart.destroy();
+
+      const telemetry = data.historical_telemetry || {};
+      const sensorKeys = Object.keys(telemetry);
+      if (sensorKeys.length === 0) return;
+
+      const colors = ['#38BDF8', '#10B981', '#F59E0B', '#EF4444', '#A855F7'];
+      const firstSeries = telemetry[sensorKeys[0]];
+      const labels = firstSeries.map((_, idx) => `T-${firstSeries.length - idx}`);
+
+      const datasets = sensorKeys.map((sKey, idx) => ({
+        label: `${sKey.replace('_', ' ')} (${data.template.sensors[sKey] ? data.template.sensors[sKey].unit : ''})`,
+        data: telemetry[sKey].map(pt => pt.value),
+        borderColor: colors[idx % colors.length],
+        backgroundColor: colors[idx % colors.length] + '15',
+        borderWidth: 2,
+        pointRadius: 2,
+        tension: 0.3
+      }));
+
+      const chartInstance = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#9CA3AF', font: { size: 10 } } }
+          },
+          scales: {
+            x: { grid: { color: '#1F293D' }, ticks: { color: '#6B7280', font: { size: 10 } } },
+            y: { grid: { color: '#1F293D' }, ticks: { color: '#6B7280', font: { size: 10 } } }
+          }
+        }
+      });
+
+      if (canvasId === 'telemetryChart') telemetryChart = chartInstance;
+      return chartInstance;
+    }
+
+    // --- 8. AI DIAGNOSIS REQUEST ---
+    async function requestAiDiagnosis() {
+      const reportPanel = document.getElementById('ai-report-panel');
+      reportPanel.classList.remove('hidden');
+      
+      const currentAsset = assets.find(a => a.id === currentAssetId) || assets[0];
+      const template = TEMPLATES[currentAsset.category_id] || TEMPLATES['tpl-industrial-motor'];
+      const healthData = analyzeAssetHealthLocal(currentAssetId);
+
+      let report = null;
+
+      // Check if backend available
+      if (isConnectedToBackend) {
+        try {
+          const res = await fetch(API_BASE + '/ai/diagnose', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ asset_id: currentAssetId })
+          });
+          if (res.ok) report = await res.json();
+        } catch (e) {}
+      }
+
+      // Deterministic Client-side Fallback
+      if (!report) {
+        const anomalies = healthData.anomalies;
+        let obs = `All ${Object.keys(template.sensors).length} sensor channels operating strictly within normal baseline tolerances.`;
+        let cause = "Nominal operation. No mechanical wear or thermal drift detected.";
+        let action = "Continue standard scheduled inspection cycle.";
+        let urgency = "ROUTINE";
+
+        if (anomalies.length > 0) {
+          const top = anomalies[0];
+          obs = `${top.sensor_type.replace('_', ' ')} recorded at ${top.current_value} (nominal: ${top.baseline}, ${top.z_score}σ variance).`;
+          
+          let matched = null;
+          template.failure_modes.forEach(fm => {
+            if (fm.trigger_rule.includes(top.sensor_type)) matched = fm;
+          });
+
+          if (matched) {
+            cause = `${matched.name}: ${matched.trigger_rule}`;
+            action = matched.recommended_action;
+            urgency = matched.urgency;
+          } else {
+            cause = `Statistical variance detected in ${top.sensor_type} subsystem.`;
+            action = `Check electrical wiring, mechanical alignment, and lubrication on ${top.sensor_type}.`;
+            urgency = healthData.status === 'CRITICAL' ? 'IMMEDIATE' : 'ELEVATED';
+          }
+        }
+
+        report = {
+          observation: obs,
+          probable_cause: cause,
+          recommended_inspection_step: action,
+          estimated_urgency: urgency,
+          generated_by: 'Gemma 4 Physics-Informed Diagnostic Engine'
+        };
+      }
+
+      document.getElementById('ai-obs').innerText = report.observation;
+      document.getElementById('ai-cause').innerText = report.probable_cause;
+      document.getElementById('ai-rec').innerText = report.recommended_inspection_step;
+      document.getElementById('ai-generated-by').innerText = report.generated_by;
+
+      const urgencyEl = document.getElementById('ai-urgency-badge');
+      urgencyEl.innerText = report.estimated_urgency;
+      urgencyEl.className = `px-2.5 py-0.5 rounded text-xs font-bold uppercase ${
+        report.estimated_urgency === 'IMMEDIATE' ? 'bg-brand-rose/20 text-brand-rose border border-brand-rose/30' : 'bg-brand-amber/20 text-brand-amber border border-brand-amber/30'
+      }`;
+
+      reportPanel.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // --- 9. FAULT SIMULATION LAB ---
+    function renderSimulationView() {
+      const assetSelect = document.getElementById('sim-asset-select');
+      assetSelect.innerHTML = '';
+      assets.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.innerText = `${a.name} (${a.id})`;
+        assetSelect.appendChild(opt);
+      });
+      assetSelect.value = currentAssetId;
+      updateSimSensorOptions();
+      updateSimWaveform();
+    }
+
+    function updateSimSensorOptions() {
+      const assetId = document.getElementById('sim-asset-select').value;
+      const asset = assets.find(a => a.id === assetId) || assets[0];
+      const tpl = TEMPLATES[asset.category_id] || TEMPLATES['tpl-industrial-motor'];
+      
+      const sensorSelect = document.getElementById('sim-sensor-select');
+      sensorSelect.innerHTML = '';
+      Object.keys(tpl.sensors).forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.innerText = `${s.replace('_', ' ')} (${tpl.sensors[s].unit})`;
+        sensorSelect.appendChild(opt);
+      });
+    }
+
+    function executeFaultInjection() {
+      const assetId = document.getElementById('sim-asset-select').value;
+      const sensorType = document.getElementById('sim-sensor-select').value;
+      const devPct = parseFloat(document.getElementById('sim-pct-slider').value);
+
+      if (!telemetryStore[assetId] || !telemetryStore[assetId][sensorType]) return;
+
+      const series = telemetryStore[assetId][sensorType];
+      const lastVal = series[series.length - 1].value;
+      const injectedVal = parseFloat((lastVal * (1.0 + devPct / 100.0)).toFixed(2));
+      const now = Date.now();
+
+      for (let i = 0; i < 15; i++) {
+        series.push({ timestamp: now + i * 5000, value: injectedVal });
+        if (series.length > 40) series.shift();
+      }
+      saveTelemetry();
+
+      const health = analyzeAssetHealthLocal(assetId);
+      const asset = assets.find(a => a.id === assetId);
+      if (asset) {
+        asset.status = health.status;
+        asset.health_score = health.health_score;
+        saveAssets();
+      }
+
+      document.getElementById('sim-feedback-card').innerHTML = `
+        <span class="text-brand-amber font-bold">Fault Injected Successfully:</span> 
+        ${sensorType} shifted by ${devPct >= 0 ? '+' : ''}${devPct}% (new value: ${injectedVal}). 
+        Asset status transitioned to <strong class="text-white">${health.status}</strong> (Health: ${health.health_score}%).
+      `;
+
+      updateSimWaveform();
+      refreshDashboard();
+    }
+
+    function injectPreset(type) {
+      if (type === 'motor-bearing') {
+        document.getElementById('sim-asset-select').value = 'asset-motor-01';
+        updateSimSensorOptions();
+        document.getElementById('sim-sensor-select').value = 'vibration';
+        document.getElementById('sim-pct-slider').value = 65;
+        document.getElementById('sim-pct-display').innerText = '+65%';
+      } else if (type === 'pump-cavitation') {
+        document.getElementById('sim-asset-select').value = 'asset-pump-01';
+        updateSimSensorOptions();
+        document.getElementById('sim-sensor-select').value = 'suction_pressure';
+        document.getElementById('sim-pct-slider').value = -45;
+        document.getElementById('sim-pct-display').innerText = '-45%';
+      } else if (type === 'engine-thermal') {
+        document.getElementById('sim-asset-select').value = 'asset-engine-01';
+        updateSimSensorOptions();
+        document.getElementById('sim-sensor-select').value = 'coolant_temp';
+        document.getElementById('sim-pct-slider').value = 40;
+        document.getElementById('sim-pct-display').innerText = '+40%';
+      }
+      executeFaultInjection();
+    }
+
+    function updateSimWaveform() {
+      const assetId = document.getElementById('sim-asset-select').value;
+      const data = analyzeAssetHealthLocal(assetId);
+      const ctx = document.getElementById('simTelemetryChart');
+      if (!ctx) return;
+      if (simTelemetryChart) simTelemetryChart.destroy();
+
+      const telemetry = data.historical_telemetry || {};
+      const sensorKeys = Object.keys(telemetry);
+      const colors = ['#F59E0B', '#38BDF8', '#10B981', '#EF4444'];
+      const firstSeries = telemetry[sensorKeys[0]] || [];
+      const labels = firstSeries.map((_, idx) => `T-${firstSeries.length - idx}`);
+
+      const datasets = sensorKeys.map((sKey, idx) => ({
+        label: sKey.replace('_', ' '),
+        data: telemetry[sKey].map(p => p.value),
+        borderColor: colors[idx % colors.length],
+        borderWidth: 2,
+        tension: 0.3
+      }));
+
+      simTelemetryChart = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#9CA3AF', font: { size: 10 } } } },
+          scales: {
+            x: { grid: { color: '#1F293D' }, ticks: { color: '#6B7280', font: { size: 10 } } },
+            y: { grid: { color: '#1F293D' }, ticks: { color: '#6B7280', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    // --- 10. FLEET REGISTRY TABLE & CRUD ---
+    function filterFleetByCategory(cat) {
+      currentCategoryFilter = cat;
+      document.querySelectorAll('.fleet-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-cat') === cat) {
+          btn.className = 'fleet-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-blue/20 text-brand-blue border border-brand-blue/40';
+        } else {
+          btn.className = 'fleet-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-surface text-gray-400 border border-brand-border hover:text-white';
+        }
+      });
+      renderFleetRegistryTable();
+    }
+
+    function renderFleetRegistryTable() {
+      const tbody = document.getElementById('fleet-registry-tbody');
+      tbody.innerHTML = '';
+      const query = (document.getElementById('fleet-search-input')?.value || '').toLowerCase();
+
+      const filtered = assets.filter(a => {
+        const matchesCat = currentCategoryFilter === 'ALL' || a.category_id === currentCategoryFilter;
+        const matchesSearch = a.name.toLowerCase().includes(query) || a.serial_number.toLowerCase().includes(query) || a.id.toLowerCase().includes(query);
+        return matchesCat && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-gray-500">No equipment found matching criteria.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(asset => {
+        const tpl = TEMPLATES[asset.category_id] || TEMPLATES['tpl-industrial-motor'];
+        const badgeBg = asset.status === 'HEALTHY' ? 'bg-emerald-950 text-brand-emerald border-emerald-800' :
+                        (asset.status === 'WARNING' ? 'bg-amber-950 text-brand-amber border-amber-800' : 'bg-rose-950 text-brand-rose border-rose-800');
+
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-brand-surface/40 transition';
+        row.innerHTML = `
+          <td class="py-3 px-4 font-semibold text-white">
+            <div>${asset.name}</div>
+            <div class="text-[10px] text-gray-400 mono">${asset.id}</div>
+          </td>
+          <td class="py-3 px-4 text-gray-300">
+            <div>${tpl.name}</div>
+            <div class="text-[10px] text-gray-500">${asset.manufacturer || 'OEM'}</div>
+          </td>
+          <td class="py-3 px-4 mono text-gray-300">${asset.serial_number}</td>
+          <td class="py-3 px-4 mono text-gray-300">${asset.total_hours} h</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${badgeBg}">${asset.status}</span>
+          </td>
+          <td class="py-3 px-4 mono font-bold ${asset.health_score >= 80 ? 'text-brand-emerald' : (asset.health_score >= 55 ? 'text-brand-amber' : 'text-brand-rose')}">
+            ${asset.health_score || '--'}%
+          </td>
+          <td class="py-3 px-4 text-right space-x-2">
+            <button onclick="inspectAssetFromFleet('${asset.id}')" class="px-2.5 py-1 rounded bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/20 text-xs font-semibold">
+              Inspect
+            </button>
+            <button onclick="deleteAsset('${asset.id}')" class="px-2 py-1 rounded bg-brand-rose/10 text-brand-rose hover:bg-brand-rose/20 text-xs font-semibold">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function inspectAssetFromFleet(assetId) {
+      currentAssetId = assetId;
+      switchView('dashboard');
+      refreshDashboard();
+    }
+
+    function openAddAssetModal() {
+      document.getElementById('asset-form').reset();
+      document.getElementById('form-asset-id').value = '';
+      document.getElementById('asset-modal-title').innerText = 'Register New Equipment';
+      document.getElementById('asset-modal').classList.remove('hidden');
+    }
+
+    function closeAssetModal() {
+      document.getElementById('asset-modal').classList.add('hidden');
+    }
+
+    function handleAssetFormSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('form-asset-name').value.trim();
+      const category = document.getElementById('form-asset-category').value;
+      const serial = document.getElementById('form-asset-serial').value.trim();
+      const mfr = document.getElementById('form-asset-mfr').value.trim() || 'Custom Plant OEM';
+      const hours = parseFloat(document.getElementById('form-asset-hours').value) || 0;
+
+      const newId = 'asset-' + Date.now().toString(36);
+      const newAsset = {
+        id: newId,
+        name,
+        category_id: category,
+        serial_number: serial,
+        manufacturer: mfr,
+        total_hours: hours,
+        status: 'HEALTHY'
+      };
+
+      assets.push(newAsset);
+      saveAssets();
+
+      // Seed mock telemetry for new asset
+      const tpl = TEMPLATES[category];
+      telemetryStore[newId] = {};
+      const now = Date.now();
+      Object.keys(tpl.sensors).forEach(sKey => {
+        const nominal = tpl.sensors[sKey].nominal;
+        const readings = [];
+        for (let i = 0; i < 25; i++) {
+          readings.push({
+            timestamp: now - (25 - i) * 5000,
+            value: parseFloat((nominal + (Math.random() - 0.5) * 0.05 * nominal).toFixed(2))
+          });
+        }
+        telemetryStore[newId][sKey] = readings;
+      });
+      saveTelemetry();
+
+      closeAssetModal();
+      currentAssetId = newId;
+      renderFleetRegistryTable();
+      refreshDashboard();
+    }
+
+    function deleteAsset(assetId) {
+      if (assets.length <= 1) {
+        alert('Cannot delete the last asset in the fleet.');
+        return;
+      }
+      if (confirm(`Are you sure you want to remove asset ${assetId}?`)) {
+        assets = assets.filter(a => a.id !== assetId);
+        delete telemetryStore[assetId];
+        saveAssets();
+        saveTelemetry();
+        if (currentAssetId === assetId) currentAssetId = assets[0].id;
+        renderFleetRegistryTable();
+        refreshDashboard();
+      }
+    }
+
+    // --- 11. DIAGNOSTICS & PREDICTIVE RENDERING ---
+    function renderDiagnosticsView() {
+      const asset = assets.find(a => a.id === currentAssetId) || assets[0];
+      const data = analyzeAssetHealthLocal(asset.id);
+      document.getElementById('diag-active-asset-name').innerText = `${asset.name} (${asset.id})`;
+
+      // Motor vibration ISO card
+      const vibSeries = (data.historical_telemetry && data.historical_telemetry['vibration']) || [];
+      const vibVal = vibSeries.length ? vibSeries[vibSeries.length - 1].value : 2.1;
+      document.getElementById('diag-vibration-val').innerText = `${vibVal} mm/s RMS`;
+
+      const zoneEl = document.getElementById('diag-vibration-zone');
+      if (vibVal < 1.4) {
+        zoneEl.innerText = 'ZONE A (PRISTINE)';
+        zoneEl.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-brand-emerald border border-emerald-800';
+      } else if (vibVal <= 2.8) {
+        zoneEl.innerText = 'ZONE B (NOMINAL)';
+        zoneEl.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-sky-950 text-brand-blue border border-sky-800';
+      } else if (vibVal <= 7.1) {
+        zoneEl.innerText = 'ZONE C (WARNING)';
+        zoneEl.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-brand-amber border border-amber-800';
+      } else {
+        zoneEl.innerText = 'ZONE D (CRITICAL BREACH)';
+        zoneEl.className = 'ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-brand-rose border border-rose-800';
+      }
+
+      // Pump cavitation card
+      const suctionSeries = (data.historical_telemetry && data.historical_telemetry['suction_pressure']) || [];
+      const cavSeries = (data.historical_telemetry && data.historical_telemetry['cavitation_index']) || [];
+      const suctionVal = suctionSeries.length ? suctionSeries[suctionSeries.length - 1].value : 1.8;
+      const cavVal = cavSeries.length ? cavSeries[cavSeries.length - 1].value : 0.45;
+
+      document.getElementById('diag-suction-p').innerText = `${suctionVal} bar`;
+      document.getElementById('diag-cav-idx').innerText = `${cavVal} RMS g`;
+
+      const cavAlert = document.getElementById('diag-cav-alert');
+      if (suctionVal < 1.2 || cavVal > 0.9) {
+        cavAlert.innerText = 'CAVITATION RISK: Low suction pressure is creating vapor pockets. Micro-bubble implosions active.';
+        cavAlert.className = 'p-2.5 rounded-lg text-xs font-semibold bg-rose-950/60 text-brand-rose border border-rose-800';
+      } else {
+        cavAlert.innerText = 'NOMINAL NPSH MARGIN: Flow kinematics steady. No vapor formation detected.';
+        cavAlert.className = 'p-2.5 rounded-lg text-xs font-semibold bg-emerald-950/60 text-brand-emerald border border-emerald-800';
+      }
+    }
+
+    function renderPredictiveView() {
+      const container = document.getElementById('rul-bars-container');
+      container.innerHTML = '';
+
+      assets.forEach(asset => {
+        const h = analyzeAssetHealthLocal(asset.id);
+        const rulPct = Math.max(10, Math.min(100, Math.round(h.health_score)));
+        const color = rulPct > 75 ? 'brand-emerald' : (rulPct > 45 ? 'brand-amber' : 'brand-rose');
+        const estDays = Math.round(rulPct * 3.6);
+
+        const card = document.createElement('div');
+        card.className = 'p-4 bg-brand-surface rounded-xl border border-brand-border space-y-2';
+        card.innerHTML = `
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-white">${asset.name}</span>
+            <span class="mono text-${color} font-bold">~${estDays} Operating Days Remaining (${rulPct}%)</span>
+          </div>
+          <div class="w-full bg-brand-charcoal h-2.5 rounded-full overflow-hidden border border-brand-border">
+            <div class="h-full bg-${color} rounded-full" style="width: ${rulPct}%"></div>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-gray-400">
+            <span>MTBF: ${h.metrics.mtbf_hours} h</span>
+            <span>Preventive Inspection: ${rulPct < 50 ? 'IMMEDIATE LOTO' : 'Routine Quarterly'}</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderReportsView() {
+      const asset = assets.find(a => a.id === currentAssetId) || assets[0];
+      const data = analyzeAssetHealthLocal(asset.id);
+
+      document.getElementById('report-date').innerText = new Date().toLocaleDateString();
+      document.getElementById('report-asset-name').innerText = asset.name;
+      document.getElementById('report-serial').innerText = asset.serial_number;
+      document.getElementById('report-hours').innerText = `${asset.total_hours} h`;
+      document.getElementById('report-health').innerText = `${data.health_score}%`;
+
+      const priorityEl = document.getElementById('report-priority');
+      priorityEl.innerText = data.status === 'CRITICAL' ? 'CRITICAL / IMMEDIATE' : (data.status === 'WARNING' ? 'ELEVATED / WARNING' : 'ROUTINE');
+      priorityEl.className = data.status === 'CRITICAL' ? 'text-brand-rose' : (data.status === 'WARNING' ? 'text-brand-amber' : 'text-brand-emerald');
+
+      if (data.anomalies.length > 0) {
+        document.getElementById('report-obs-text').innerText = data.anomalies.map(a => a.message).join(' ');
+        document.getElementById('report-cause-text').innerText = `Statistical drift observed exceeding baseline limits. Subsystem analysis flags failure modes corresponding to ${data.anomalies[0].sensor_type}.`;
+      } else {
+        document.getElementById('report-obs-text').innerText = 'All parameter channels within nominal tolerances. Steady-state kinematics verified.';
+        document.getElementById('report-cause-text').innerText = 'No root-cause faults active.';
+      }
+    }
+
+    function generateWorkOrderFromAI() {
+      switchView('reports');
+    }
+
+    // --- 12. HISTORICAL ANALYTICS CHARTS ---
+    function renderAnalyticsCharts() {
+      // 30-Day OEE Chart
+      const oeeCtx = document.getElementById('oeeHistoryChart');
+      if (oeeCtx && !oeeHistoryChart) {
+        const days = Array.from({ length: 15 }, (_, i) => `Day ${i + 1}`);
+        const oeeData = [86, 85, 87, 86, 84, 85, 88, 86, 83, 81, 79, 82, 80, 83, 82.4];
+        oeeHistoryChart = new Chart(oeeCtx.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: days,
+            datasets: [{
+              label: 'Fleet OEE (%)',
+              data: oeeData,
+              borderColor: '#38BDF8',
+              backgroundColor: '#38BDF820',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { grid: { color: '#1F293D' }, ticks: { color: '#6B7280', font: { size: 10 } } },
+              y: { min: 70, max: 100, grid: { color: '#1F293D' }, ticks: { color: '#6B7280', font: { size: 10 } } }
+            }
+          }
+        });
+      }
+
+      // Failure Distribution Chart
+      const failCtx = document.getElementById('failureDistributionChart');
+      if (failCtx && !failureDistributionChart) {
+        failureDistributionChart = new Chart(failCtx.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: ['Bearing Wear', 'Pump Cavitation', 'Thermal Overheat', 'Shaft Misalignment', 'Nominal'],
+            datasets: [{
+              data: [35, 25, 20, 10, 10],
+              backgroundColor: ['#F59E0B', '#EF4444', '#EC4899', '#8B5CF6', '#10B981'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { color: '#9CA3AF', font: { size: 10 } } }
+            }
+          }
+        });
+      }
+    }
+
+    // --- 13. AI CHAT ASSISTANT ---
+    function sendAiChatMessage() {
+      const input = document.getElementById('ai-chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      appendChatMessage('user', text);
+      
+      setTimeout(() => {
+        const response = generateAiEngineeringResponse(text);
+        appendChatMessage('assistant', response);
+      }, 400);
+    }
+
+    function askPresetAi(prompt) {
+      appendChatMessage('user', prompt);
+      setTimeout(() => {
+        const response = generateAiEngineeringResponse(prompt);
+        appendChatMessage('assistant', response);
+      }, 400);
+    }
+
+    function appendChatMessage(sender, text) {
+      const container = document.getElementById('ai-chat-messages');
+      const div = document.createElement('div');
+      div.className = 'flex items-start space-x-2.5';
+      
+      if (sender === 'user') {
+        div.innerHTML = `
+          <div class="w-7 h-7 rounded-lg bg-brand-blue/20 border border-brand-blue/40 flex items-center justify-center text-brand-blue shrink-0">
+            <i class="fa-solid fa-user text-xs"></i>
+          </div>
+          <div class="bg-brand-blue/10 border border-brand-blue/20 p-3 rounded-xl text-white max-w-xl leading-relaxed">
+            ${text}
+          </div>
+        `;
+      } else {
+        div.innerHTML = `
+          <div class="w-7 h-7 rounded-lg bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 shrink-0">
+            <i class="fa-solid fa-robot text-xs"></i>
+          </div>
+          <div class="bg-brand-surface p-3 rounded-xl border border-brand-border text-gray-200 max-w-xl leading-relaxed">
+            ${text}
+          </div>
+        `;
+      }
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function generateAiEngineeringResponse(query) {
+      const q = query.toLowerCase();
+      if (q.includes('iso') || q.includes('vibration') || q.includes('limits')) {
+        return `Under <strong>ISO 10816-3</strong> for industrial induction motors (15kW to 300kW):<br>&bull; <strong>Zone A (&lt; 1.4 mm/s):</strong> Newly commissioned / pristine.<br>&bull; <strong>Zone B (1.4 – 2.8 mm/s):</strong> Unrestricted long-term operation.<br>&bull; <strong>Zone C (2.8 – 7.1 mm/s):</strong> Warning drift — check bearing race spalling.<br>&bull; <strong>Zone D (&gt; 7.1 mm/s):</strong> Critical shutdown recommended to prevent catastrophic rotor contact.`;
+      }
+      if (q.includes('cavitation') || q.includes('pump') || q.includes('suction')) {
+        return `<strong>Centrifugal Pump Cavitation Protocol:</strong><br>Cavitation occurs when localized static fluid pressure drops below vapor pressure ($P_{suction} &lt; P_{vapor}$), creating vapor cavities that implode against the impeller. Key symptoms:<br>1. Suction pressure drops &lt; 1.2 bar.<br>2. High-frequency acoustic spikes (&gt; 0.9 RMS g).<br>3. Gravel-like noise inside volute.<br><strong>Remedy:</strong> Throttling discharge valve, clearing intake strainer, or reducing fluid temperature.`;
+      }
+      if (q.includes('harmonic') || q.includes('1x') || q.includes('2x')) {
+        return `In vibration spectral FFT analysis:<br>&bull; <strong>1X RPM Harmonic Peak:</strong> Primary indicator of dynamic rotor mass imbalance.<br>&bull; <strong>2X RPM Harmonic Peak:</strong> Primary signature of angular/parallel shaft misalignment or bent shaft.<br>&bull; <strong>Non-synchronous high frequency harmonics:</strong> Bearing inner/outer race flaking (BPFI/BPFO).`;
+      }
+      return `Based on current fleet telemetry, the active asset <strong>${currentAssetId}</strong> has its health evaluated deterministically against nominal baselines. I recommend reviewing the <strong>Equipment Diagnostics</strong> tab for exact threshold curves.`;
+    }
+
+    // --- 14. SETTINGS HANDLERS ---
+    async function testAndSaveApiUrl() {
+      const input = document.getElementById('settings-api-url');
+      const resultEl = document.getElementById('settings-conn-result');
+      API_BASE = input.value.trim();
+      localStorage.setItem('mechshield_api_url', API_BASE);
+      
+      resultEl.innerHTML = `<span class="text-brand-blue"><i class="fa-solid fa-spinner fa-spin"></i> Pinging ${API_BASE}...</span>`;
+      const ok = await testBackendConnection();
+      if (ok) {
+        resultEl.innerHTML = `<span class="text-brand-emerald font-bold"><i class="fa-solid fa-check"></i> Connected successfully to live API server!</span>`;
+      } else {
+        resultEl.innerHTML = `<span class="text-brand-amber font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> Server unreachable. Platform running seamlessly in Autonomous Embedded Physics mode.</span>`;
+      }
+      refreshDashboard();
+    }
+
+    function restoreFactoryDefaults() {
+      if (confirm('Reset fleet to factory initial demo state?')) {
+        localStorage.removeItem('mechshield_assets');
+        localStorage.removeItem('mechshield_telemetry');
+        assets = JSON.parse(JSON.stringify(INITIAL_ASSETS));
+        telemetryStore = {};
+        initTelemetryIfEmpty();
+        currentAssetId = 'asset-motor-01';
+        refreshDashboard();
+        alert('Factory demo state restored.');
+      }
+    }
+
+    function triggerTelemetryRefresh() {
+      refreshDashboard();
+    }
+
+    // --- 15. INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', async () => {
+      initTelemetryIfEmpty();
+      await testBackendConnection();
+      refreshDashboard();
+    });
+  </script>
+</body>
+</html>
